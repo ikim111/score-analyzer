@@ -11,5 +11,11 @@ NEIS 정기시험 **학생답 정오표(.xlsx)** 를 브라우저에 끌어다 �
 2. 사이트를 열고 파일들을 상자에 한꺼번에 놓기
 3. 맨 아래 "AI에게 붙여넣을 글" 복사 → AI에 붙여넣기
 
+## 개발
+- 원본은 `src/`, `python3 build.py`로 `index.html`(배포본)을 만듭니다.
+- 확인: `npm install && npx playwright install chromium` 후 `npm test` (개인정보 없는 가짜 정오표로 테스트)
+- 실제 학생 정오표는 저장소에 넣지 않습니다.
+- 자세한 구조와 원칙은 `CLAUDE.md`.
+
 ## 배포
-정적 파일 하나(`index.html`)라 Vercel/GitHub Pages 어디든 그대로 올리면 됩니다. 외부 의존성은 SheetJS(cdnjs)와 Google Fonts뿐입니다.
+`main`에 push하면 Vercel이 자동 배포합니다. 외부 의존성은 SheetJS(cdnjs)와 Google Fonts뿐입니다.

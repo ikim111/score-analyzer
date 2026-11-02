@@ -1,0 +1,350 @@
+<div class="wrap">
+  <header class="topbar">
+    <div><h1>정오표 분석기</h1>
+    <p class="sub" id="subline">NEIS 정기시험 학생답 정오표(.xlsx)를 끌어다 놓으면 문항분석·점수분포·반별 비교를 계산하고, AI에 바로 붙여넣을 글을 만듭니다. 파일은 이 브라우저 안에서만 처리되고 어디로도 보내지지 않습니다.</p></div>
+    <button class="ghost" id="gohome" hidden>⌂ 처음으로</button>
+  </header>
+
+  <section id="home">
+    <div class="menu">
+      <button class="menu-card" id="pick1"><b>1</b><strong>1개의 시험 분석하기</strong><span>정오표를 넣으면 문항분석·점수분포·반별 비교·영역별 분석을 계산하고 AI에게 물어볼 글을 만들어요.</span></button>
+      <button class="menu-card" id="pick2"><b>2</b><strong>두 시험 비교분석하기</strong><span>1차·2차 시험 정오표를 각각 넣으면 같은 학생끼리 짝지어 변화·상대 위치·반별 변화를 계산해요.</span></button>
+    </div>
+    <div class="steps">
+      <div><b>1 내려받기</b>NEIS › 성적 › 정기시험교과목별 학생답 정오표 › 반별 엑셀 저장</div>
+      <div><b>2 끌어다 놓기</b>저장한 파일들을 상자에 한꺼번에 놓기</div>
+      <div><b>3 복사해서 묻기</b>맨 아래 "AI에게 붙여넣을 글" 복사 → ChatGPT·제미나이·쎈지피티 등에 붙여넣기</div>
+    </div>
+    <p class="note">파일은 이 브라우저 안에서만 처리되고 어디로도 보내지지 않아요. AI에게 붙여넣는 글에는 학생 이름·학번이 들어가지 않아요.</p>
+  </section>
+
+  <section id="m1" hidden>
+  <label class="drop" id="drop">
+    <input type="file" id="file" multiple accept=".xlsx,.xls">
+    <strong>여기에 정오표 엑셀 파일을 놓으세요</strong>
+    <span class="sub">반별 파일 여러 개를 한 번에 놓을 수 있습니다 · 클릭해서 고르기도 됩니다</span>
+    <div class="files" id="files"></div>
+    <div class="steps">
+      <div><b>1 내려받기</b>NEIS › 성적 › 정기시험교과목별 학생답 정오표 › 반별 엑셀 저장</div>
+      <div><b>2 끌어다 놓기</b>저장한 파일들을 이 상자에 한꺼번에 놓기</div>
+      <div><b>3 복사해서 묻기</b>맨 아래 "AI에게 붙여넣을 글" 복사 → ChatGPT·쎈지피티 등에 붙여넣기</div>
+    </div>
+  </label>
+
+  <div id="out" hidden>
+    <div class="panel" style="margin-bottom:20px">
+      <h2>영역 붙이기 <span class="pill p-warn">선택 사항 · 붙이면 아래 결과와 AI용 글에 영역별 분석이 추가돼요</span></h2>
+      <p class="note" style="margin:0 0 8px">① 영역 이름을 쉼표로 구분해 적고 "영역 만들기" → ② 표에서 각 문항이 속한 영역 칸을 클릭하세요. 한 문항은 한 영역에만 들어가고, 클릭하면 바로 다시 계산돼요.<br>영역은 <b>중단원 수준으로 3~5개, 영역당 문항 4개 이상</b>이 적당해요. 문항이 3개 이하인 영역은 한 학생의 득점률이 0·33·67·100%로만 움직여서, 반별(20~30명) 비교가 한두 명 차이로 크게 흔들려요 — 그런 영역은 학년 전체 수치만 참고하고 반별 수치는 가볍게 읽으세요.</p>
+      <div class="btnrow" style="margin-bottom:8px"><label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer"><input type="checkbox" id="multidom" style="width:15px;height:15px"> 한 문항을 여러 영역에 넣기 허용 (섞인 문항용)</label></div>
+      <div class="btnrow"><input id="domnames" type="text" placeholder="예: 일차함수, 삼각형 합동, 외심·내심, 사각형" style="flex:1;min-width:200px;font:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)"><button class="ghost" id="mkdom">영역 만들기</button></div>
+      <div class="tbl" id="tagwrap" hidden style="margin-top:10px"><table id="tagmat"></table></div>
+      <div class="btnrow" id="tagbtns" hidden style="margin-top:10px"><span class="note" id="tagstat" style="margin:0"></span><button class="ghost" id="cleartag">선택 모두 지우기</button></div>
+      <div id="domwrap" hidden style="margin-top:14px"><div class="tbl"><table id="domains"></table></div><div class="tbl" style="margin-top:10px"><table id="domcls"></table></div></div>
+    </div>
+    <div class="panel" style="margin-bottom:20px">
+      <h2>시험 개요 <span class="pill p-mute" id="title"></span></h2>
+      <div class="kpis" id="kpis"></div>
+      <div class="two">
+        <div>
+          <div class="hist" id="hist"></div><div class="hlab" id="hlab"></div>
+          <p class="note">5점 구간별 학생 수 (100점은 따로)</p>
+        </div>
+        <div class="tbl"><table id="dist"></table></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px">
+      <h2>검사 요약 <span class="pill p-mute" id="relband"></span></h2>
+      <div class="kpis" id="kpis2"></div>
+      <div class="two">
+        <div class="tbl"><table id="csem"></table></div>
+        <div class="tbl"><table id="cuts"></table></div>
+      </div>
+      <p class="note">측정오차는 점수대마다 달라요(이항모형, Lord 1984). 등급 경계 ±1 SEM 안의 학생은 시험 오차만으로도 등급이 바뀔 수 있어요. 5지선다는 정답률 60% 근처에서 변별이 가장 커요.</p>
+    </div>
+
+
+    <div class="panel" style="margin-bottom:20px">
+      <h2>문항분석 <span class="pill p-mute" id="cutinfo"></span></h2>
+      <div class="tbl"><table id="items"></table></div>
+      <details><summary>읽는 법</summary>
+        <p class="note">정답률: 빨강 50% 미만(어려움), 초록 90% 이상(쉬움). 변별도 D = 상위27% 정답률 − 하위27% 정답률: 0.4↑ 우수, 0.2↓ 검토. 문항-총점 상관이 0.2 미만이면 실력과 무관하게 갈린 문항. 선택률의 노란 칸은 한 오답에 몰린 정도. '오개념 의심' = 어려운데 상위권도 못 맞힘 → 수업에서 다룰 1순위. 복수표기(오답)는 정답 코드가 아닌 복수 표시 비율.</p>
+      </details>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px">
+      <h2>반별 비교 <span class="pill p-mute" id="anova"></span></h2>
+      <div class="tbl"><table id="classes"></table></div>
+      <p class="note">반 평균 차이는 흔히 우연 범위입니다(한 반 28명이면 평균이 ±3점쯤 흔들림). 표준편차·IQR·최저점으로 반의 모양을 보세요. "소수 극단값"은 몇 명만 아주 낮은 반, "전체가 넓게 퍼짐"은 반 안의 수준 차이가 큰 반입니다.</p>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px">
+      <h2>성적대별 문항 정답률 <span class="pill p-mute" id="qinfo"></span></h2>
+      <div class="tbl"><table id="byq"></table></div>
+      <p class="note">1학기 총점 4분위 집단별 정답률. 왼쪽에서 오른쪽으로 올라가야 정상이에요. 상위 25%만 높으면 '최상위권만 넘는 문턱', 하위 25%만 낮으면 '기초학력 진단' 문항이에요. 역전은 더 높은 집단의 정답률이 5%p 넘게 떨어진 문항으로, 실력 순서와 다르게 갈린 거예요.</p>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px">
+      <h2>오답지 분석 <span class="pill p-mute" id="distinfo"></span></h2>
+      <div class="tbl"><table id="distr"></table></div>
+      <p class="note">오답은 하위권이 더 많이 골라야 정상이에요. 선지별 상관은 정답이 +, 오답이 −여야 정상이고, 오답인데 +(빨강)이면 상위권이 그 오답을 더 고른 것이라 복수정답·문항 오류·지문 혼동을 확인해야 해요. 죽은 오답지(2% 미만)가 많으면 5지선다가 2~3지선다로 작동한 거예요.</p>
+    </div>
+
+    <div class="panel" style="margin-bottom:20px">
+      <h2>집단 진단</h2>
+      <div class="two">
+        <div class="tbl"><table id="diag"></table></div>
+        <div class="tbl"><table id="misc"></table></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>AI에게 붙여넣을 글</h2>
+      <p class="note" style="margin:0 0 10px">위 표 전부를 학생 이름·학번 없이 글로 정리한 것이에요. 각 표 앞에 '읽는 규칙'이 붙어 있어서 어떤 AI든 같은 기준으로 해석해요. 끝에 질문 8개가 들어 있어요. 복사해서 ChatGPT, 쎈지피티 등에 붙여넣으세요.</p>
+      <div class="btnrow">
+        <button id="copyAll">자료 + 질문 복사</button>
+        <button class="ghost" id="copyData">자료만 복사</button>
+        <span class="toast" id="toast">복사했습니다</span>
+      </div>
+      <textarea id="prompt" readonly style="margin-top:12px"></textarea>
+    </div>
+  </div>
+  </section>
+
+  <section id="m2" hidden>
+    <div class="two">
+      <div class="panel slot" id="slotA">
+        <h2>1차 시험 <span class="pill p-mute">먼저 본 시험</span></h2>
+        <input class="name" id="nameA" type="text" placeholder="시험 이름 (예: 1학기 기말고사)" value="1차 시험">
+        <label class="drop small" id="dropA"><input type="file" id="fileA" multiple accept=".xlsx,.xls"><strong>1차 정오표 파일 놓기</strong><span class="sub">반별 파일 여러 개 한꺼번에</span><div class="files" id="filesA"></div></label>
+      </div>
+      <div class="panel slot" id="slotB">
+        <h2>2차 시험 <span class="pill p-mute">나중에 본 시험</span></h2>
+        <input class="name" id="nameB" type="text" placeholder="시험 이름 (예: 2학기 중간고사)" value="2차 시험">
+        <label class="drop small" id="dropB"><input type="file" id="fileB" multiple accept=".xlsx,.xls"><strong>2차 정오표 파일 놓기</strong><span class="sub">반별 파일 여러 개 한꺼번에</span><div class="files" id="filesB"></div></label>
+      </div>
+    </div>
+    <p class="note" id="cstat">두 시험 모두 파일을 넣으면 자동으로 계산돼요. 학번이 같은 학생끼리 짝을 지어요(한쪽만 본 학생은 제외).</p>
+    <div id="cout" hidden>
+      <div class="panel" style="margin-bottom:20px">
+        <h2>전체 변화 <span class="pill p-mute" id="cpair"></span></h2>
+        <div class="kpis" id="ckpis"></div>
+        <div class="two">
+          <div><div class="hist" id="chist"></div><div class="hlab" id="chlab"></div><p class="note">학생별 점수 변화(2차 − 1차) 분포. 0 오른쪽이 오른 학생.</p></div>
+          <div class="tbl"><table id="cbands"></table></div>
+        </div>
+        <p class="note" id="cnote"></p>
+      </div>
+      <div class="panel" style="margin-bottom:20px">
+        <h2>두 시험 산점도 <span class="pill p-mute" id="cscinfo"></span><select id="chl" style="margin-left:auto;font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)"></select></h2>
+        <div class="two" style="grid-template-columns:minmax(0,3fr) minmax(0,2fr)">
+          <div id="cscatter" style="min-width:0"></div>
+          <div class="tbl"><table id="crel"></table></div>
+        </div>
+        <p class="note">점 하나가 학생 한 명(가로 1차, 세로 2차). 점선은 "두 시험 점수가 같음", 실선은 전체 추세선 — 기울기가 1보다 완만할수록 평균으로의 회귀가 큼. 추세선보다 위에 있는 학생이 1차로 예상되는 것보다 2차를 잘 본 학생. 오른쪽 위 목록에서 반을 고르면 그 반 학생만 진하게 표시돼요.</p>
+      </div>
+      <div class="panel" style="margin-bottom:20px">
+        <h2>1차 성적대별 변화 <span class="pill p-warn">평균으로의 회귀 주의</span></h2>
+        <div class="tbl"><table id="cquart"></table></div>
+        <p class="note">1차에 아주 낮거나 높았던 학생은 2차에 평균 쪽으로 돌아오는 경향이 자연스럽게 있어요. 그래서 '점수 변화' 대신 <b>기대 대비 변화</b>(1차 점수로 예측한 2차 점수보다 얼마나 더/덜 받았나)와 <b>성장 백분위</b>(1차 점수가 비슷한 학생들 사이에서 2차 점수가 몇 번째인지, 50이 보통)를 보세요.</p>
+      </div>
+      <div class="panel" style="margin-bottom:20px">
+        <h2>점수대 이동 <span class="pill p-mute" id="cbandinfo"></span></h2>
+        <div class="two"><div class="tbl"><table id="ccross"></table></div><div class="tbl"><table id="clow"></table></div></div>
+      </div>
+      <div class="panel" style="margin-bottom:20px">
+        <h2>반별 변화 <span class="pill p-mute" id="canova"></span></h2>
+        <div class="tbl"><table id="cclasses"></table></div>
+        <p class="note" id="cclsnote"></p>
+      </div>
+      <div class="panel" style="margin-bottom:20px">
+        <h2>크게 움직인 학생 <span class="pill p-mute">화면에만 표시 · AI용 글에는 안 들어가요</span></h2>
+        <div class="two"><div class="tbl"><table id="cup"></table></div><div class="tbl"><table id="cdown"></table></div></div>
+        <p class="note" id="csplit"></p>
+      </div>
+      <div class="panel">
+        <h2>AI에게 붙여넣을 글</h2>
+        <p class="note" style="margin:0 0 10px">위 표를 학생 이름·학번·반·번호 없이 글로 정리한 것이에요. 맨 위에 "점수 상승 ≠ 실력 상승" 같은 읽는 규칙이 붙어 있고, 끝에 질문 8개가 있어요. 쓰인 방법: 신뢰 변화 지수(Jacobson & Truax 1991), 변화 점수 신뢰도(Lord; Cronbach & Furby 1970), 잔차 이득(회귀 기반 성장), 성장 백분위(Betebenner 2009)의 간이 계산.</p>
+        <div class="btnrow"><button id="ccopyAll">자료 + 질문 복사</button><button class="ghost" id="ccopyData">자료만 복사</button><span class="toast" id="ctoast">복사했습니다</span></div>
+        <textarea id="cprompt" readonly style="margin-top:12px"></textarea>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/*ANALYZE*/
+/*COMPARE*/
+</script>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const drop=$('drop'), input=$('file'), filesEl=$('files');
+  const pc=x=>(x*100).toFixed(1)+'%', f1=x=>x.toFixed(1), f2=x=>x.toFixed(2);
+  const pill=(t,c)=>`<span class="pill ${c}">${t}</span>`;
+  let loaded=[]; // {name, rows}
+
+  function render(R){
+    if(!R){ return; }
+    $('out').hidden=false;
+    $('title').textContent=R.title;
+    const d=R.dist;
+    $('kpis').innerHTML=[[d.n,'응시 인원'],[f2(d.mean),'평균'],[d.median,'중앙값'],[f2(d.sd),'표준편차'],[d.min+' / '+d.max,'최저 / 최고'],[f2(d.kr20),'신뢰도 KR-20'],['±'+f1(d.sem),'측정 오차(점)'],[f2(d.skew),'왜도']]
+      .map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+    const mx=Math.max(...d.hist.map(h=>h[1]));
+    $('hist').innerHTML=d.hist.map(([l,c])=>`<div style="height:${mx?c/mx*100:0}%"><i>${c||''}</i></div>`).join('');
+    $('hlab').innerHTML=d.hist.map(([l])=>`<span>${l.split('-')[0]}</span>`).join('');
+    const rows=[['90점 이상',d.ge90],['80점 이상',d.ge80],['60점 미만',d.lt60],['40점 미만',d.lt40]].map(([l,c])=>`<tr><td class="l">${l}</td><td class="num">${c}명</td><td class="num">${pc(c/d.n)}</td></tr>`).join('');
+    $('dist').innerHTML=`<tr><th class="l">구분</th><th>인원</th><th>비율</th></tr>${rows}<tr><td class="l">Q1 ~ Q3 (IQR)</td><td class="num" colspan="2">${d.q1} ~ ${d.q3} (${f1(d.iqr)})</td></tr>${R.hasSA?`<tr><td class="l">선택형 / 서답형 평균</td><td class="num" colspan="2">${f1(d.mcMean)} / ${f1(d.saMean)}</td></tr><tr><td class="l">선택형-서답형 상관</td><td class="num" colspan="2">${f2(d.corrMcSa)}</td></tr>`:`<tr><td class="l">서답형</td><td class="num" colspan="2">없음</td></tr>`}`;
+    $('cutinfo').textContent=`상위27% ${R.nUp}명(${R.upCut}점↑) · 하위27% ${R.nLo}명(${R.loCut}점↓)`;
+    const vc=v=>v.includes('우수')?'p-good':v.includes('의심')||v.includes('검토')?'p-bad':v.includes('쉬움')?'p-mute':'p-warn';
+    const rateC=p=>p<.5?' style="color:var(--bad);font-weight:600"':p>=.9?' style="color:var(--good)"':'';
+    const DC=D=>D>=.4?' style="color:var(--good);font-weight:600"':D<.2?' style="color:var(--bad);font-weight:600"':'';
+    const rC=r=>r<.2?' style="color:var(--bad);font-weight:600"':'';
+    $('items').innerHTML=`<tr><th>문항</th><th>정답</th><th>배점</th><th>정답률</th><th>오답률<br>순위</th><th>변별도 D</th><th>상위27%</th><th>중위</th><th>하위27%</th><th>문항-총점<br>상관</th><th>①</th><th>②</th><th>③</th><th>④</th><th>⑤</th><th>복수(오답)</th><th>무표기</th><th>최다오답</th><th>오답유형</th><th>판정</th><th>조치</th></tr>`+
+      R.items.map(it=>{const rank=[...R.items].sort((a,b)=>a.p-b.p).findIndex(x=>x.q===it.q)+1; const ans=['1','2','3','4','5'];
+        return `<tr><td class="num">${it.q}</td><td class="num">${it.key}</td><td class="num">${it.pts}</td><td class="num"${rateC(it.p)}>${pc(it.p)}</td><td class="num">${rank}</td><td class="num"${DC(it.D)}>${f2(it.D)}</td><td class="num">${pc(it.pu)}</td><td class="num">${pc(it.midRate)}</td><td class="num">${pc(it.pl)}</td><td class="num"${rC(it.rpb)}>${f2(it.rpb)}</td>`+
+        it.o.map((v,i)=>`<td class="num ${ans[i]!==it.key&&v>=.05?'heat':''}" style="--v:${Math.min(v*200,80)}">${ans[i]===it.key?'<b>'+pc(v)+'</b>':pc(v)}</td>`).join('')+
+        `<td class="num">${pc(it.multiWrong)}</td><td class="num">${pc(it.blank)}</td><td>${it.worst}</td><td>${it.pattern?pill(it.pattern.split('(')[0],it.pattern.startsWith('쏠림')?'p-warn':'p-mute'):'-'}</td><td class="l">${pill(it.verdict,vc(it.verdict))}</td><td>${pill(it.action,it.action.startsWith('오류')?'p-bad':it.action==='수정'?'p-warn':it.action==='검토'?'p-warn':it.action.includes('기초')?'p-mute':'p-good')}</td></tr>`;}).join('');
+    $('classes').innerHTML=`<tr><th>반</th><th>인원</th><th>평균</th><th>중앙값</th><th>표준편차</th><th>IQR</th><th>최저</th><th>최고</th><th>80점↑</th><th>60점↓</th><th>선택형</th>${R.hasSA?`<th>서답형</th>`:``}<th class="l">반 모양</th><th class="l">특히 약한 문항</th></tr>`+
+      R.classes.map(c=>`<tr><td>${c.cls}반</td><td class="num">${c.n}</td><td class="num">${f1(c.mean)}</td><td class="num">${c.median}</td><td class="num">${f1(c.sd)}</td><td class="num">${f1(c.iqr)}</td><td class="num">${c.min}</td><td class="num">${c.max}</td><td class="num">${c.ge80}</td><td class="num">${c.lt60}</td><td class="num">${f1(c.mc)}</td>${R.hasSA?`<td class="num">${f1(c.sa)}</td>`:``}<td class="l">${pill(c.shape,c.shape.includes('극단')?'p-bad':c.shape.includes('넓게')?'p-warn':c.shape==='고름'?'p-good':'p-mute')}</td><td class="l">${c.weakItems.join(' ')||'-'}</td></tr>`).join('')+
+      `<tr><td><b>전체</b></td><td class="num"><b>${d.n}</b></td><td class="num"><b>${f1(d.mean)}</b></td><td class="num"><b>${d.median}</b></td><td class="num"><b>${f1(d.sd)}</b></td><td class="num"><b>${f1(d.iqr)}</b></td><td class="num">${d.min}</td><td class="num">${d.max}</td><td class="num">${d.ge80}</td><td class="num">${d.lt60}</td><td class="num">${f1(d.mcMean)}</td><td class="num">${f1(d.saMean)}</td><td></td><td></td></tr>`;
+    $('anova').textContent=R.anova?`일원분산분석 F=${f2(R.anova.F)}, p=${R.anova.p.toFixed(3)} → ${R.anova.p<.05?'반 간 차이 있음':'반 간 차이 없음(우연 범위)'}`:'반이 하나라 비교 없음';
+    const X=R.X;
+    $('qinfo').textContent=`역전 문항: ${X.nonMonotone.length?X.nonMonotone.join(', ')+'번':'없음'}`;
+    $('byq').innerHTML=`<tr><th>문항</th><th>하위25%<br>(${X.quartiles[0].range[0]}~${X.quartiles[0].range[1]})</th><th>25~50%<br>(${X.quartiles[1].range[0]}~${X.quartiles[1].range[1]})</th><th>50~75%<br>(${X.quartiles[2].range[0]}~${X.quartiles[2].range[1]})</th><th>상위25%<br>(${X.quartiles[3].range[0]}~${X.quartiles[3].range[1]})</th><th>순서</th><th>최하위${X.bottom.n}명</th></tr>`+
+      R.items.map((it,i)=>`<tr><td class="num">${it.q}</td>${it.byQ.map(v=>`<td class="num heat" style="--v:${(1-v)*60}">${pc(v)}</td>`).join('')}<td>${it.monotone?'<span class="pill p-good">O</span>':'<span class="pill p-bad">역전</span>'}</td><td class="num"${X.bottom.rates[i]<0.5&&it.p>=0.85?' style="color:var(--bad);font-weight:600"':''}>${pc(X.bottom.rates[i])}</td></tr>`).join('');
+    $('distinfo').textContent=`죽은 오답 ${X.deadTotal}개 · 문항당 작동 오답 ${f1(X.workingMean)}개 · 정답 선지는 표에서 제외`;
+    $('distr').innerHTML=`<tr><th>문항</th><th>정답</th><th>오답 유형</th><th>작동 오답</th><th>죽은 오답</th><th>상위≥하위 오답</th><th>+관계 오답</th><th>오답별 오답-점수 관계 (정답 제외)</th><th class="l">오답별 상위 / 하위 선택률</th></tr>`+
+      R.items.map(it=>{const parts=[],rels=[];['1','2','3','4','5'].forEach((k,i)=>{if(k===it.key)return;const x=it.optRpb[i];rels.push(`${'①②③④⑤'[i]} <span style="${x!==null&&x>0.05?'color:var(--bad);font-weight:600':''}">${x===null?'·':(x>=0?'+':'')+x.toFixed(2)}</span>`);if(it.o[i]>=.05)parts.push(`${'①②③④⑤'[i]} ${pc(it.optUp[i])} / ${pc(it.optLo[i])}`);});
+        return `<tr><td class="num">${it.q}</td><td class="num">${'①②③④⑤'[+it.key-1]||it.key}</td><td>${it.pattern?pill(it.pattern,it.pattern.startsWith('쏠림')?'p-warn':'p-mute'):'-'}</td><td class="num">${it.working}</td><td>${it.dead.join('')||'-'}</td><td>${it.suspect.length?pill(it.suspect.join(''),'p-warn'):'-'}</td><td>${it.posDistractor.length?pill(it.posDistractor.join(''),'p-bad'):'-'}</td><td class="num">${rels.join(' &nbsp; ')}</td><td class="l num" style="white-space:normal">${parts.join(' · ')||'-'}</td></tr>`;}).join('');
+    const B=X.bottom, M=X.mismatch, O=X.omission;
+    $('diag').innerHTML=`<tr><th class="l" colspan="2">최하위 ${B.n}명 (최고 ${B.maxScore}점)</th></tr>
+      ${R.hasSA?`<tr><td class="l">서답형 평균</td><td class="num">${f1(B.sa)} / ${M.saMax}</td></tr>`:''}
+      <tr><td class="l">쉬운 문항(85%↑)인데 절반도 못 맞힘</td><td class="num">${B.easyMissed.length?B.easyMissed.join(', ')+'번':'없음'}</td></tr>
+      <tr><td class="l">이 집단 정답률 10% 이하</td><td class="num">${B.zeroItems.length?B.zeroItems.join(', ')+'번':'없음'}</td></tr>
+      <tr><th class="l" colspan="2">성적대별 평균</th></tr>`+X.quartiles.map(g=>`<tr><td class="l">${g.label} (${g.n}명)</td><td class="num">총점 ${f1(g.mean)}${R.hasSA?` · 서답형 ${f1(g.sa)}`:''}</td></tr>`).join('');
+    $('misc').innerHTML=(R.hasSA?`<tr><th class="l" colspan="2">선택형 · 서답형 불일치</th></tr>
+      <tr><td class="l">선택형 80%↑, 서답형 50%↓ (알지만 못 씀)</td><td class="num">${M.mcHighSaLow}명</td></tr>
+      <tr><td class="l">선택형 60%↓, 서답형 80%↑</td><td class="num">${M.mcLowSaHigh}명</td></tr>
+      <tr><td class="l">서답형 0점 / 만점</td><td class="num">${M.saZero}명 / ${M.saFull}명</td></tr>`:`<tr><th class="l" colspan="2">서답형 없는 시험</th></tr>`)+`<tr><th class="l" colspan="2">시간 부족 신호 (무표기율)</th></tr>
+      <tr><td class="l">앞쪽 1/3 문항 평균</td><td class="num">${pc(O.front)}</td></tr>
+      <tr><td class="l">뒤쪽 1/3 문항 평균</td><td class="num">${pc(O.back)}</td></tr>
+      <tr><td class="l">무표기 최다 문항</td><td class="num">${O.maxItem.q}번 (${pc(O.maxItem.blank)})</td></tr>
+      <tr><th class="l" colspan="2">신뢰도 기여</th></tr>
+      <tr><td class="l">빼면 신뢰도가 오르는 문항</td><td class="num">${X.hurting.length?X.hurting.join(', ')+'번':'없음'}</td></tr>
+      <tr><td class="l">난이도 분포 (쉬움/중간/어려움)</td><td class="num">${X.difficulty.easy} / ${X.difficulty.mid} / ${X.difficulty.hard}</td></tr>`;
+    const SM=X.summary;
+    $('relband').textContent=`KR-20 ${f2(d.kr20)} → ${X.relBand}`;
+    $('kpis2').innerHTML=[[pc(SM.meanP),'평균 난이도 (목표 ≈60%)'],[f2(SM.meanD),'평균 변별도'],[f2(SM.meanRpb),'평균 문항-총점 상관'],[pc(SM.guessFloor),'추측 바닥'],[`${X.difficulty.easy}/${X.difficulty.mid}/${X.difficulty.hard}`,'쉬움/중간/어려움'],[`${SM.nFlag} · ${SM.nRevise} · ${R.items.filter(it=>it.action==='검토').length}`,'오류확인 · 수정 · 검토'],[`${f2(X.sb[0].r)} / ${f2(X.sb[1].r)}`,'30 / 40문항이면 신뢰도']]
+      .map(([v,l])=>`<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+    $('csem').innerHTML=`<tr><th class="l">점수대</th><th>점수</th><th>±1 SEM</th><th>범위</th></tr>`+X.csem.map(c=>`<tr><td class="l">${c.label}</td><td class="num">${c.score}</td><td class="num">±${f1(c.csem)}</td><td class="num">${f1(c.score-c.csem)} ~ ${f1(Math.min(100,c.score+c.csem))}</td></tr>`).join('');
+    $('cuts').innerHTML=`<tr><th class="l">등급 경계</th><th>±${f1(d.sem)}점 안 학생</th><th>그중 바로 아래</th></tr>`+X.cutZone.map(c=>`<tr><td class="l">${c.cut}점</td><td class="num">${c.n}명</td><td class="num">${c.below}명</td></tr>`).join('');
+    if(X.domains){ $('domwrap').hidden=false;
+      $('domains').innerHTML=`<tr><th class="l">영역</th><th>문항</th><th>배점</th><th>득점률</th><th>평균 변별도</th><th>하위25%</th><th>25~50%</th><th>50~75%</th><th>상위25%</th><th>최하위집단</th></tr>`+X.domains.map(dm=>`<tr><td class="l">${dm.name}${dm.n<=3?' '+pill('문항 '+dm.n+'개 · 반별 비교 주의','p-warn'):''}</td><td class="num">${dm.qs.join(', ')}</td><td class="num">${dm.pts}</td><td class="num"${dm.rate<0.6?' style="color:var(--bad);font-weight:600"':''}>${pc(dm.rate)}</td><td class="num">${f2(dm.meanD)}</td>${dm.byQ.map(v=>`<td class="num heat" style="--v:${(1-v)*60}">${pc(v)}</td>`).join('')}<td class="num">${pc(dm.bottom)}</td></tr>`).join('');
+      $('domcls').innerHTML=`<tr><th>반</th>${X.domains.map(dm=>`<th>${dm.name}${dm.n<=3?' <span class="pill p-warn">주의</span>':''}</th>`).join('')}</tr>`+R.classes.map(c=>`<tr><td>${c.cls}반</td>${c.domainRates.map((v,i)=>`<td class="num heat" style="--v:${Math.max(0,(X.domains[i].rate-v))*300}">${pc(v)}</td>`).join('')}</tr>`).join('');
+    } else $('domwrap').hidden=true;
+    if(dom.nq!==R.nq){ dom.nq=R.nq; dom.assign=Array.from({length:R.nq},()=>[]); drawMatrix(); }
+    window._data=NeisAnalyzer.buildPrompt(R);
+    $('prompt').value=window._data+'\n\n'+NeisAnalyzer.QUESTIONS;
+  }
+
+  function readFiles(list, store, done){
+    const arr=[...list].filter(f=>/\.xlsx?$/i.test(f.name)); if(!arr.length) return;
+    let pending=arr.length;
+    arr.forEach(f=>{ const fr=new FileReader(); fr.onload=e=>{ try{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true}); const p=NeisAnalyzer.parseSheet(rows); if(!p){ store.push({name:f.name,err:'정오표 형식이 아님'}); } else { const i=store.findIndex(x=>x.cls===p.cls); if(i>=0) store.splice(i,1); store.push({name:f.name,cls:p.cls,rows}); } }catch(err){ store.push({name:f.name,err:'읽기 실패'}); } if(--pending===0) done(); }; fr.readAsArrayBuffer(f); });
+  }
+  function addFiles(list){ readFiles(list, loaded, refresh); }
+  function refresh(){
+    loaded.sort((a,b)=>(a.cls||99)-(b.cls||99));
+    filesEl.innerHTML=loaded.map(x=>x.err?`<span class="chip err">${x.name} · ${x.err}</span>`:`<span class="chip">${x.cls}반 · ${x.name}</span>`).join('');
+    const ok=loaded.filter(x=>!x.err).map(x=>x.rows);
+    if(ok.length) render(NeisAnalyzer.analyze(ok, currentTags()));
+  }
+  const dom={names:[],assign:[],nq:0};
+  function currentTags(){ return dom.names.length?dom.assign.map(a=>a.slice()):null; }
+  function drawMatrix(){ const T=$('tagmat'); if(!dom.names.length||!dom.nq){ $('tagwrap').hidden=true; $('tagbtns').hidden=true; T.innerHTML=''; return; }
+    $('tagwrap').hidden=false; $('tagbtns').hidden=false;
+    T.innerHTML=`<tr><th class="l">영역 \\ 문항</th>${Array.from({length:dom.nq},(_,i)=>`<th>${i+1}</th>`).join('')}<th>문항 수</th></tr>`+
+      dom.names.map(nm=>`<tr><td class="l"><b>${nm}</b></td>${Array.from({length:dom.nq},(_,i)=>{const on=dom.assign[i].includes(nm);return `<td class="cell${on?' on':''}" data-d="${nm}" data-i="${i}" title="${i+1}번 → ${nm}">${on?'●':''}</td>`;}).join('')}<td class="num">${dom.assign.filter(a=>a.includes(nm)).length}</td></tr>`).join('');
+    const un=dom.assign.map((a,i)=>a.length?null:i+1).filter(Boolean), multi=dom.assign.map((a,i)=>a.length>1?i+1:null).filter(Boolean);
+    $('tagstat').textContent=(un.length?`아직 영역이 없는 문항: ${un.join(', ')}번 (없어도 계산은 돼요)`:'모든 문항에 영역이 붙었어요')+(multi.length?` · 여러 영역에 들어간 문항: ${multi.join(', ')}번`:''); }
+  $('tagmat').addEventListener('click',e=>{ const td=e.target.closest('td.cell'); if(!td) return; const i=+td.dataset.i, d=td.dataset.d, cur=dom.assign[i];
+    if(cur.includes(d)) dom.assign[i]=cur.filter(x=>x!==d); else dom.assign[i]=$('multidom').checked?[...cur,d]:[d];
+    drawMatrix(); refresh(); });
+  $('multidom').addEventListener('change',()=>{ if(!$('multidom').checked){ dom.assign=dom.assign.map(a=>a.slice(0,1)); drawMatrix(); refresh(); } });
+  $('mkdom').addEventListener('click',()=>{ const names=[...new Set($('domnames').value.split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean))]; dom.names=names; dom.assign=dom.assign.map(a=>a.filter(x=>names.includes(x))); drawMatrix(); refresh(); });
+  $('domnames').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('mkdom').click(); } });
+  $('cleartag').addEventListener('click',()=>{ dom.assign=Array.from({length:dom.nq},()=>[]); drawMatrix(); refresh(); });
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+  drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+  input.addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+  function copy(txt,tid='toast',taid='prompt'){ const show=()=>{const t=$(tid);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);};
+    navigator.clipboard.writeText(txt).then(show).catch(()=>{const ta=$(taid);const old=ta.value;ta.value=txt;ta.select();try{document.execCommand('copy');}catch(e){}ta.value=old;show();}); }
+  $('copyAll').addEventListener('click',()=>copy($('prompt').value));
+  $('copyData').addEventListener('click',()=>copy(window._data||''));
+
+  // ---- 화면 전환 ----
+  const SUB={home:'NEIS 정기시험 학생답 정오표(.xlsx)로 문항분석·점수분포·반별 비교를 하고, AI에게 바로 붙여넣을 글을 만듭니다.', m1:'정오표를 끌어다 놓으면 문항분석·점수분포·반별 비교를 계산하고, AI에 바로 붙여넣을 글을 만듭니다.', m2:'1차·2차 시험의 정오표를 각각 넣으면 같은 학생끼리 짝지어 변화를 계산합니다.'};
+  function show(mode){ ['home','m1','m2'].forEach(k=>$(k).hidden=(k!==mode)); $('gohome').hidden=(mode==='home'); $('subline').textContent=SUB[mode]; window.scrollTo({top:0}); try{ location.hash = mode==='home' ? '' : mode; }catch(e){} }
+  $('pick1').addEventListener('click',()=>show('m1')); $('pick2').addEventListener('click',()=>show('m2')); $('gohome').addEventListener('click',()=>show('home'));
+  show(location.hash==='#m1'?'m1':location.hash==='#m2'?'m2':'home');
+
+  // ---- 두 시험 비교 ----
+  const loadedA=[], loadedB=[];
+  const chips=(store,el)=>{ store.sort((a,b)=>(a.cls||99)-(b.cls||99)); el.innerHTML=store.map(x=>x.err?`<span class="chip err">${x.name} · ${x.err}</span>`:`<span class="chip">${x.cls}반 · ${x.name}</span>`).join(''); };
+  function wireDrop(dropEl,inputEl,store,done){ ['dragenter','dragover'].forEach(ev=>dropEl.addEventListener(ev,e=>{e.preventDefault();dropEl.classList.add('over');})); ['dragleave','drop'].forEach(ev=>dropEl.addEventListener(ev,e=>{e.preventDefault();dropEl.classList.remove('over');})); dropEl.addEventListener('drop',e=>readFiles(e.dataTransfer.files,store,done)); inputEl.addEventListener('change',e=>{readFiles(e.target.files,store,done);e.target.value='';}); }
+  wireDrop($('dropA'),$('fileA'),loadedA,crefresh); wireDrop($('dropB'),$('fileB'),loadedB,crefresh);
+  $('nameA').addEventListener('input',crefresh); $('nameB').addEventListener('input',crefresh);
+  function crefresh(){
+    chips(loadedA,$('filesA')); chips(loadedB,$('filesB'));
+    const okA=loadedA.filter(x=>!x.err).map(x=>x.rows), okB=loadedB.filter(x=>!x.err).map(x=>x.rows);
+    if(!okA.length||!okB.length){ $('cstat').textContent=`1차 ${okA.length}개 반, 2차 ${okB.length}개 반 — 두 시험 모두 파일을 넣으면 자동으로 계산돼요.`; $('cout').hidden=true; return; }
+    const RA=NeisAnalyzer.analyze(okA), RB=NeisAnalyzer.analyze(okB);
+    const C=NeisCompare.compare(RA,RB,$('nameA').value.trim()||'1차 시험',$('nameB').value.trim()||'2차 시험');
+    if(C.error){ $('cstat').textContent=C.error; $('cout').hidden=true; return; }
+    $('cstat').textContent=`${C.nameA} ${RA.students.length}명 ↔ ${C.nameB} ${RB.students.length}명 · 두 시험 모두 본 ${C.n}명을 짝지었어요 (1차만 ${C.onlyA}명, 2차만 ${C.onlyB}명 제외)`;
+    crender(C); $('cout').hidden=false;
+  }
+  function crender(C){
+    const sg=x=>(x>=0?'+':'')+x.toFixed(1), sgp=x=>(x>=0?'+':'')+(x*100).toFixed(1)+'%p';
+    $('cpair').textContent=`${C.nameA} → ${C.nameB} · ${C.n}명`;
+    $('ckpis').innerHTML=[[f1(C.A.mean)+' → '+f1(C.B.mean),'평균 (1차 → 2차)'],[sg(C.mD),'평균 변화(점)'],[f2(C.r),'두 시험 점수 상관'],['±'+f1(C.semDiff),'변화의 오차 폭(점)'],[C.beyond+'명','오차 폭 밖으로 움직임'],[C.relUp+' / '+C.relDown,'백분위 20%p↑ 오름 / 내림'],[C.pT<0.05?'우연 아님':'우연 범위','평균 변화 (p='+C.pT.toFixed(3)+')']].map(([v,l])=>`<div class="kpi"><b style="font-size:${String(v).length>9?'15px':'20px'}">${v}</b><span>${l}</span></div>`).join('');
+    const mx=Math.max(...C.hist.map(h=>h[1]),1); $('chist').innerHTML=C.hist.map(([l,c])=>`<div style="height:${c/mx*100}%;${l.startsWith('-')||l.startsWith('−')?'opacity:.55':''}"><i>${c||''}</i></div>`).join(''); $('chlab').innerHTML=C.hist.map(([l])=>`<span>${l.replace('~','<br>~')}</span>`).join('');
+    $('cbands').innerHTML=`<tr><th class="l">변화 폭</th><th>학생 수</th><th>비율</th></tr>`+C.bands.map(b=>`<tr><td class="l">${b.label}</td><td class="num">${b.n}</td><td class="num">${pc(b.n/C.n)}</td></tr>`).join('');
+    $('cnote').textContent=`평균 변화 ${sg(C.mD)}점은 ${C.pT<0.05?'우연이라 보기 어렵지만, 두 시험의 난이도 차이일 가능성이 커요':'우연 범위예요'}. 두 시험 점수 상관 ${f2(C.r)}(순위 상관 ${f2(C.rho)}) — 0.7 이상이면 두 시험이 학생을 거의 같은 순서로 세운 것. 한 학생의 변화는 시험 오차만으로 ±${f1(C.semDiff)}점 흔들릴 수 있어요.`;
+    // 산점도
+    const clsList=[...new Set(C.points.map(p=>p.cls))].sort((a,b)=>a-b); const sel=$('chl'); const prev=sel.value; sel.innerHTML=`<option value="">전체 학생</option>`+clsList.map(c=>`<option value="${c}">${c}반만 진하게</option>`).join(''); if([...sel.options].some(o=>o.value===prev)) sel.value=prev;
+    const drawScatter=()=>{ const hl=sel.value?Number(sel.value):null; const W=520,H=400,m={l:40,r:12,t:12,b:34}; const sx=x=>m.l+x/100*(W-m.l-m.r), sy=y=>H-m.b-y/100*(H-m.t-m.b);
+      const grid=[0,20,40,60,80,100].map(v=>`<line x1="${sx(v)}" y1="${sy(0)}" x2="${sx(v)}" y2="${sy(100)}" stroke="var(--line)"/><line x1="${sx(0)}" y1="${sy(v)}" x2="${sx(100)}" y2="${sy(v)}" stroke="var(--line)"/><text x="${sx(v)}" y="${H-m.b+16}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="var(--mono)">${v}</text><text x="${m.l-6}" y="${sy(v)+3}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="var(--mono)">${v}</text>`).join('');
+      const pts=C.points.map(p=>{const on=hl===null||p.cls===hl; return `<circle cx="${sx(p.a)}" cy="${sy(p.b)}" r="${on&&hl!==null?4:3}" fill="${on?(hl!==null?'var(--bad)':'var(--bar)'):'var(--muted)'}" opacity="${on?(hl!==null?0.9:0.45):0.12}"><title>${p.cls}반 · 1차 ${p.a} → 2차 ${p.b} · 성장 백분위 ${p.sgp}</title></circle>`;}).join('');
+      const y0=C.icpt, y1=C.icpt+C.slope*100;
+      $('cscatter').innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="두 시험 산점도">${grid}<line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(100)}" y2="${sy(100)}" stroke="var(--muted)" stroke-dasharray="4 4"/><line x1="${sx(0)}" y1="${sy(Math.max(0,Math.min(100,y0)))}" x2="${sx(100)}" y2="${sy(Math.max(0,Math.min(100,y1)))}" stroke="var(--accent)" stroke-width="2"/>${pts}<text x="${(sx(0)+sx(100))/2}" y="${H-4}" text-anchor="middle" font-size="11" fill="var(--muted)">1차 ${C.nameA}</text><text transform="translate(12 ${(sy(0)+sy(100))/2}) rotate(-90)" text-anchor="middle" font-size="11" fill="var(--muted)">2차 ${C.nameB}</text></svg>`; };
+    sel.onchange=drawScatter; drawScatter();
+    $('cscinfo').textContent=`상관 ${f2(C.r)} · 추세선 2차 ≈ ${f1(C.icpt)} + ${f2(C.slope)}×1차`;
+    $('crel').innerHTML=`<tr><th class="l" colspan="2">변화를 얼마나 믿을 수 있나</th></tr>
+      <tr><td class="l">"정말 변했다"고 볼 기준 (신뢰 변화 지수)</td><td class="num">±${f1(C.rciCut)}점</td></tr>
+      <tr><td class="l">기준 넘어 오른 / 내린 학생</td><td class="num">${C.rciUp}명 / ${C.rciDown}명</td></tr>
+      <tr><td class="l">변화 점수의 신뢰도</td><td class="num" style="${C.relD<0.5?'color:var(--warn);font-weight:600':''}">${f2(C.relD)}</td></tr>
+      <tr><td class="l" colspan="2" style="white-space:normal;color:var(--muted);font-size:12px">변화 점수 신뢰도가 0.5보다 낮으면 학생 한 명의 오르내림은 절반 이상이 시험 오차예요. 반·성적대 같은 집단 단위로만 말하세요. 두 시험이 학생을 같은 순서로 세울수록(상관↑) 개인별 변화는 오히려 덜 믿을 만해집니다.</td></tr>
+      <tr><th class="l" colspan="2">성장 백분위 (전체)</th></tr>
+      <tr><td class="l">중앙값 (50이 보통)</td><td class="num">${C.sgpAll.med}</td></tr>
+      <tr><td class="l">80 이상 / 20 이하 학생</td><td class="num">${C.sgpAll.hi}명 / ${C.sgpAll.lo}명</td></tr>`;
+    $('cquart').innerHTML=`<tr><th class="l">1차 성적대</th><th>인원</th><th>1차 평균</th><th>2차 평균</th><th>점수 변화</th><th>백분위 변화</th><th>기대 대비 변화</th><th>성장 백분위 중앙값</th><th>성장 80↑</th><th>성장 20↓</th><th>5점↑ 오름</th><th>5점↑ 내림</th></tr>`+C.quart.map(g=>`<tr><td class="l">${g.label}</td><td class="num">${g.n}</td><td class="num">${f1(g.a)}</td><td class="num">${f1(g.b)}</td><td class="num">${sg(g.d)}</td><td class="num">${sgp(g.dp)}</td><td class="num" style="${Math.abs(g.resid)>=2?'font-weight:600':''}">${sg(g.resid)}</td><td class="num">${g.sgp.med}</td><td class="num">${g.sgp.hi}</td><td class="num">${g.sgp.lo}</td><td class="num">${g.up}</td><td class="num">${g.down}</td></tr>`).join('');
+    $('cbandinfo').textContent=`한 단계↑ ${C.bandUp}명 · 한 단계↓ ${C.bandDown}명`;
+    $('ccross').innerHTML=`<tr><th class="l">1차 \\ 2차</th>${C.bandLabels.map(l=>`<th>${l}</th>`).join('')}</tr>`+C.cross.map((row,i)=>`<tr><td class="l">${C.bandLabels[i]}</td>${row.map((v,j)=>`<td class="num${i===j?' heat':''}" style="--v:${i===j?25:0}">${v||''}</td>`).join('')}</tr>`).join('');
+    $('clow').innerHTML=`<tr><th class="l" colspan="2">기초학력(60점 미만) 추적</th></tr><tr><td class="l">두 시험 모두 60점 미만</td><td class="num">${C.low.both}명</td></tr><tr><td class="l">1차 60↓ → 2차 60↑</td><td class="num">${C.low.escaped}명</td></tr><tr><td class="l">1차 60↑ → 2차 60↓</td><td class="num">${C.low.fell}명</td></tr>`;
+    $('canova').textContent=C.anova?`반별 변화 차이: ${C.anova.p<0.05?'있음':'우연 범위'} (p=${C.anova.p.toFixed(3)})`:'';
+    $('cclasses').innerHTML=`<tr><th>반</th><th>인원</th><th>1차 평균</th><th>2차 평균</th><th>점수 변화</th><th>표준점수 변화</th><th>기대 대비 변화 (±오차)</th><th>성장 백분위 중앙값</th><th>성장 80↑</th><th>성장 20↓</th><th>5점↑ 오름</th><th>5점↑ 내림</th></tr>`+C.classes.map(c=>`<tr><td>${c.cls}반</td><td class="num">${c.n}</td><td class="num">${f1(c.a)}</td><td class="num">${f1(c.b)}</td><td class="num">${sg(c.d)}</td><td class="num">${(c.dz>=0?'+':'')+f2(c.dz)}</td><td class="num">${sg(c.resid)} <span style="color:var(--muted)">(±${f1(c.residSE)})</span> ${c.residFlag?pill(c.residFlag+' 오차 2배 초과',c.residFlag==='↑'?'p-good':'p-bad'):''}</td><td class="num">${c.sgp.med}</td><td class="num">${c.sgp.hi}</td><td class="num">${c.sgp.lo}</td><td class="num">${c.up}</td><td class="num">${c.down}</td></tr>`).join('');
+    $('cclsnote').textContent=`반 평균 변화는 우연만으로 ±${f1(C.sD/Math.sqrt(C.n/C.classes.length))}점쯤 흔들려요. '기대 대비 변화'는 그 반 학생들의 1차 점수로 예측한 2차 점수보다 실제가 얼마나 높았나(반의 출발점 차이를 보정한 값)이고, 괄호는 우연으로 흔들리는 폭이에요. 변화가 오차의 2배를 넘을 때만 ↑/↓ 표시가 붙고, 표시가 없는 반은 "다른 반과 다르다"고 말할 근거가 없어요.`;
+    const mv=(list,title)=>`<tr><th class="l" colspan="4">${title}</th></tr><tr><th>반</th><th>번호</th><th>1차 → 2차</th><th>변화</th><th>성장 백분위</th></tr>`+(list.length?list.map(m=>`<tr><td class="num">${m.cls}</td><td class="num">${m.no}</td><td class="num">${m.a} → ${m.b}</td><td class="num">${sg(m.d)}${m.rci?' ✓':''}</td><td class="num">${m.sgp}</td></tr>`).join(''):`<tr><td colspan="5">없음</td></tr>`);
+    $('cup').innerHTML=mv(C.movers.up,'가장 많이 오른 학생 (✓ = 오차 기준을 넘는 변화)'); $('cdown').innerHTML=mv(C.movers.down,'가장 많이 내린 학생');
+    $('csplit').textContent=`선택형 득점률 ${pc(C.split.mcA)} → ${pc(C.split.mcB)}`+(C.split.hasSA?`, 서답형 ${pc(C.split.saA)} → ${pc(C.split.saB)}`+((C.split.saMissA.length||C.split.saMissB.length)?` (서답형 점수가 비어 있는 반 제외: 1차 ${C.split.saMissA.map(c=>c+'반').join(',')||'없음'}, 2차 ${C.split.saMissB.map(c=>c+'반').join(',')||'없음'})`:''):' (서답형은 한쪽에 없어 비교 생략)')+''; 
+    window._cdata=NeisCompare.buildComparePrompt(C); $('cprompt').value=window._cdata+'\n\n'+NeisCompare.QUESTIONS2;
+  }
+  $('ccopyAll').addEventListener('click',()=>copy($('cprompt').value,'ctoast','cprompt'));
+  $('ccopyData').addEventListener('click',()=>copy(window._cdata||'','ctoast','cprompt'));
+})();
+</script>

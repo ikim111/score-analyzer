@@ -1,0 +1,10 @@
+{
+  "name": "score-analyzer",
+  "private": true,
+  "scripts": {
+    "build": "python3 build.py",
+    "synth": "node tests/make_synth.js",
+    "test": "node tests/make_synth.js && node tests/smoke.js tests/data/synth_a && node tests/smoke.js tests/data/synth_a tests/data/synth_b"
+  },
+  "devDependencies": { "playwright": "1.47.2", "xlsx": "0.18.5" }
+}
